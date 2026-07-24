@@ -24,6 +24,16 @@ Estado de esta entrega:
   - .EXE (centro de control C++ con Groq): PENDIENTE (se deja el
     puente preparado dentro del addon; ver sección 6).
 
+ACTUALIZACIÓN v3.0.1:
+  - INMORTALIDAD TOTAL: Verity ya NO muere por el VACÍO. Un guardián por
+    dimensión la detecta antes del plano de borrado y la reaparece detrás del
+    jugador, furiosa (líneas nuevas VOID_LINES). Combinado con la resurrección
+    original (muerte/lava/fuego), ahora es imposible eliminarla de forma
+    permanente por cualquier medio.
+  - SUSTOS POSICIONALES: los susurros/llamados/"presencia" ahora suenan desde
+    una dirección real alrededor del jugador (a veces detrás), no desde el
+    centro. Se sienten mucho más realistas.
+
 ----------------------------------------------------------------
 2) RENOMBRADO A "VERITY ONLINE"
 ----------------------------------------------------------------

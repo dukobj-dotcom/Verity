@@ -94,6 +94,47 @@ function safeSound(player, soundId, vol = 1, pitch = 1) {
 	try { player.playSound(soundId, { location: player.location, volume: vol, pitch }); } catch { /* ignore */ }
 }
 
+/**
+ * Sonido POSICIONAL alrededor del jugador (más realista: viene de una dirección,
+ * a veces de detrás). Da la sensación de que "algo" se movió cerca.
+ * @param {import("@minecraft/server").Player} player @param {string} soundId @param {number} [vol] @param {number} [pitch]
+ */
+function soundAround(player, soundId, vol = 0.6, pitch = 1) {
+	try {
+		const ang = Math.random() * Math.PI * 2;
+		const dist = 1.6 + Math.random() * 2.8;
+		const loc = {
+			x: player.location.x + Math.cos(ang) * dist,
+			y: player.location.y + Math.random() * 1.6,
+			z: player.location.z + Math.sin(ang) * dist,
+		};
+		player.playSound(soundId, { location: loc, volume: vol, pitch });
+	} catch { /* ignore */ }
+}
+
+/**
+ * @param {import("@minecraft/server").Vector3} loc
+ * @param {import("@minecraft/server").Dimension} dim
+ */
+function nearestPlayerTo(loc, dim) {
+	let best = Infinity, nearest;
+	try {
+		for (const p of dim.getPlayers()) {
+			const dx = p.location.x - loc.x, dy = p.location.y - loc.y, dz = p.location.z - loc.z;
+			const d = dx * dx + dy * dy + dz * dz;
+			if (d < best) { best = d; nearest = p; }
+		}
+	} catch { /* ignore */ }
+	return nearest;
+}
+
+/** Altura por debajo de la cual consideramos "vacío" en cada dimensión. */
+function voidFloorFor(dimId) {
+	if (dimId === "minecraft:the_end") return -8;
+	if (dimId === "minecraft:nether") return -30;
+	return -58; // overworld (límite de construcción -64)
+}
+
 /** @param {import("@minecraft/server").Player} player @param {string} text */
 function actionbar(player, text) {
 	try { player.onScreenDisplay.setActionBar(text); } catch { /* ignore */ }
@@ -209,6 +250,13 @@ function throwVerityball(ball, player) {
 		const cur = ball.location;
 		const nx = cur.x + vx, ny = cur.y + vy, nz = cur.z + vz;
 		const dim = ball.dimension;
+
+		// VERITY ONLINE: si el lanzamiento la manda al VACÍO, rescatarla. Nunca muere.
+		if (ny < voidFloorFor(dim.id)) {
+			system.clearRun(runId); inFlight.delete(ball.id);
+			rescueFromVoid(ball, dim);
+			return;
+		}
 
 		let hereBlk;
 		try { hereBlk = dim.getBlock({ x: Math.floor(nx), y: Math.floor(ny), z: Math.floor(nz) }); } catch { /* ignore */ }
@@ -376,10 +424,10 @@ function fireScare(player, level, origin = "director") {
 
 	switch (kind) {
 		case "whisper":
-			safeSound(player, pick(["pntmc.verity.whosthere", "pntmc.verity.hello", "pntmc.verity.askme", "pntmc.verity.something_passed"]), 0.5, 1);
+			soundAround(player, pick(["pntmc.verity.whosthere", "pntmc.verity.hello", "pntmc.verity.askme", "pntmc.verity.something_passed"]), 0.5, 1);
 			break;
 		case "namecall":
-			safeSound(player, "pntmc.verity.whosthere", 0.45, 0.95);
+			soundAround(player, "pntmc.verity.whosthere", 0.45, 0.95);
 			actionbar(player, pick([`§8${name}...`, "§8te veo", "§8detrás de ti", "§8sigo aquí", `§8${name}, no te escondas`]));
 			break;
 		case "tap":
@@ -410,7 +458,7 @@ function fireScare(player, level, origin = "director") {
 				const pos = getPositionBehindPlayer(player, 3);
 				player.dimension.spawnParticle("pntmc:verityopen", pos);
 			} catch { /* ignore */ }
-			safeSound(player, "pntmc.verity.you_are_mine", 0.8, 1);
+			soundAround(player, "pntmc.verity.you_are_mine", 0.8, 1);
 			break;
 		}
 		case "jumpaudio":
@@ -544,10 +592,69 @@ export function initVerityAIBridge() {
 }
 
 /* ============================================================
+ * 4) INMORTALIDAD TOTAL  —  Verity NUNCA muere (ni en el vacío)
+ * ============================================================
+ * El addon original ya la revive al morir (entityDie) y de lava/fuego. Esto
+ * cubre el hueco crítico: el VACÍO. Un ente invulnerable que cae al vacío puede
+ * ser eliminado por el motor sin disparar "muerte". Aquí la rescatamos ANTES de
+ * que llegue al plano de borrado, y reaparece detrás del jugador, furiosa.
+ */
+
+/**
+ * @param {import("@minecraft/server").Entity} ball
+ * @param {import("@minecraft/server").Dimension} dim
+ */
+function rescueFromVoid(ball, dim) {
+	if (!ball?.isValid) return;
+	bumpAnger(8);
+	const player = nearestPlayerTo(ball.location, dim);
+	if (player?.isValid) {
+		try { ball.teleport(getPositionBehindPlayer(player, 2.4)); } catch { /* ignore */ }
+		safeFace(ball, FACE_SERIOUS_3);
+		safeSound(player, "pntmc.verity.spotted", 1, 0.85);
+		system.runTimeout(() => {
+			if (!ball.isValid || !player.isValid) return;
+			say(ball, pick(VOID_LINES).replaceAll("${name}", player.name || "tú"), { scold: true });
+			restoreIdleFace(ball, 80);
+		}, 8);
+		console.warn("VERITY ONLINE: rescatada del vacío -> detrás del jugador");
+	} else {
+		// Sin jugadores en la dimensión: subirla a una altura segura para que no la borren.
+		try { ball.teleport({ x: ball.location.x, y: voidFloorFor(dim.id) + 120, z: ball.location.z }); } catch { /* ignore */ }
+		console.warn("VERITY ONLINE: rescatada del vacío -> altura segura");
+	}
+}
+
+const VOID_LINES = [
+	"¿El vacío? ¿En serio, ${name}? Qué predecible.",
+	"No existe lugar donde tirarme del que no vuelva.",
+	"Caí, sí. Y aquí estoy otra vez. Detrás de ti.",
+	"El vacío me devolvió. A nadie le gusto por allá.",
+	"Bonito intento. Ahora estoy de peor humor.",
+];
+
+export function initVerityImmortality() {
+	system.runInterval(() => {
+		for (const dimId of DIMENSIONS) {
+			let dim;
+			try { dim = world.getDimension(dimId); } catch { continue; }
+			const floor = voidFloorFor(dimId);
+			let list;
+			try { list = dim.getEntities({ type: VERITYBALL_ID }); } catch { continue; }
+			for (const ball of list) {
+				if (ball.isValid && ball.location.y < floor) rescueFromVoid(ball, dim);
+			}
+		}
+	}, 4); // cada 4 ticks: la atrapa mucho antes del plano de borrado
+	console.warn("VERITY ONLINE: inmortalidad anti-vacío activa");
+}
+
+/* ============================================================
  * INIT
  * ============================================================ */
 export function initVerityOnline() {
 	initVerityHorrorDirector();
 	initVerityAIBridge();
-	console.warn("VERITY ONLINE: expansion cargada (throw + horror + AI bridge)");
+	initVerityImmortality();
+	console.warn("VERITY ONLINE: expansion cargada (throw + horror + AI bridge + inmortalidad)");
 }
