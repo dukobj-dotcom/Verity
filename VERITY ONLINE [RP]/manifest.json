@@ -1,0 +1,47 @@
+{
+  "format_version": 2,
+  "metadata": {
+    "authors": [
+      "PnTMC (original creator)",
+      "MATTEDUCK (modified & expanded)"
+    ],
+    "license": "All Rights Reserved",
+    "url": "https://www.youtube.com/@PnTMCvn"
+  },
+  "header": {
+    "name": "VERITY ONLINE [RP]",
+    "description": "VERITY ONLINE  §7—§r intelligent horror entity for Bedrock.\\nModified & expanded by MATTEDUCK.\\nOriginal: ThatMob's Verity by PnTMC.",
+    "uuid": "986a628e-3bad-45a9-acb9-50a8a093639e",
+    "min_engine_version": [
+      1,
+      26,
+      0
+    ],
+    "version": [
+      3,
+      0,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "resources",
+      "uuid": "e4432e7a-ff94-4ca2-84e4-9654084f02de",
+      "version": [
+        3,
+        0,
+        0
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "uuid": "0c4f63c2-3550-42ca-8505-100f8c0a6ea0",
+      "version": [
+        3,
+        0,
+        0
+      ]
+    }
+  ]
+}
