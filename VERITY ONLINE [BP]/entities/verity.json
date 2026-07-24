@@ -9,7 +9,10 @@
 			"properties": {
 				"pntmc:chase_state": {
 					"type": "int",
-					"range": [0, 2],
+					"range": [
+						0,
+						2
+					],
 					"default": 0,
 					"client_sync": true
 				}
@@ -27,7 +30,12 @@
 		},
 		"components": {
 			"minecraft:type_family": {
-				"family": ["pntmc", "verity", "monster", "mob"]
+				"family": [
+					"pntmc",
+					"verity",
+					"monster",
+					"mob"
+				]
 			},
 			"minecraft:collision_box": {
 				"width": 0.9,
@@ -38,7 +46,11 @@
 					{
 						"width": 0.85,
 						"height": 2.2,
-						"pivot": [0, 1.1, 0]
+						"pivot": [
+							0,
+							1.1,
+							0
+						]
 					}
 				]
 			},
@@ -98,6 +110,13 @@
 			},
 			"minecraft:loot": {
 				"table": "loot_tables/empty.json"
+			},
+			"minecraft:persistent": {},
+			"minecraft:breathable": {
+				"breathes_air": true,
+				"breathes_water": true,
+				"generates_bubbles": false,
+				"suffocate_time": 0
 			}
 		},
 		"events": {
@@ -106,20 +125,28 @@
 			},
 			"pntmc:spawn_idle": {
 				"queue_command": {
-					"command": ["effect @s slowness 999999 255 true"]
+					"command": [
+						"effect @s slowness 999999 255 true"
+					]
 				}
 			},
 			"pntmc:to_chase": {
 				"queue_command": {
-					"command": ["effect @s clear slowness"]
+					"command": [
+						"effect @s clear slowness"
+					]
 				},
 				"add": {
-					"component_groups": ["pntmc:transform_chase"]
+					"component_groups": [
+						"pntmc:transform_chase"
+					]
 				}
 			},
 			"pntmc:despawn": {
 				"add": {
-					"component_groups": ["pntmc:despawn"]
+					"component_groups": [
+						"pntmc:despawn"
+					]
 				}
 			}
 		}

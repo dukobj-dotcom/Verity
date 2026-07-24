@@ -35,7 +35,7 @@ import {
 	enforceSingleVerityball,
 	initVeritySingleton,
 } from "./verity_singleton.js";
-import { initVerityOnline, handleSneakThrow } from "./verity_online.js";
+import { initVerityOnline, handleSneakThrow, throwVerityFromHand, handleVoDebugCommand } from "./verity_online.js";
 
 const BOX_ID = "pntmc:cardboard_box";
 const VERITYBALL_ID = "pntmc:verityball";
@@ -513,6 +513,16 @@ function onVerityItemPlace(ev) {
 	if (faceIndex === undefined) return;
 	if (!(ev.source instanceof Player)) return;
 
+	// VERITY ONLINE: agachado => lanzarla desde la mano (no colocar).
+	if (ev.source.isSneaking) {
+		const voPlayer = ev.source;
+		system.run(() => {
+			consumeHeldItem(voPlayer, itemTypeId);
+			throwVerityFromHand(voPlayer, faceIndex);
+		});
+		return;
+	}
+
 	const block = ev.block;
 	if (!isValidVerityPlaceTarget(block)) {
 		console.warn(
@@ -691,6 +701,8 @@ if (itemUseOnBefore) {
 	itemUseOnBefore.subscribe((ev) => {
 		const itemTypeId = ev.itemStack?.typeId;
 		if (!VERITY_ITEM_TO_FACE[itemTypeId]) return;
+		// VERITY ONLINE: si va agachado se maneja como lanzamiento, no bloquear.
+		if (ev.source instanceof Player && ev.source.isSneaking) return;
 		if (!isValidVerityPlaceTarget(ev.block)) {
 			ev.cancel = true;
 		}
@@ -703,8 +715,16 @@ const itemUseBefore = world.beforeEvents.itemUse;
 if (itemUseBefore) {
 	itemUseBefore.subscribe((ev) => {
 		const itemTypeId = ev.itemStack?.typeId;
-		if (VERITY_ITEM_TO_FACE[itemTypeId]) {
-			ev.cancel = true;
+		const voFace = VERITY_ITEM_TO_FACE[itemTypeId];
+		if (voFace === undefined) return;
+		ev.cancel = true;
+		// VERITY ONLINE: agachado + usar el objeto => lanzarla desde la mano con gravedad.
+		if (ev.source instanceof Player && ev.source.isSneaking) {
+			const voPlayer = ev.source;
+			system.run(() => {
+				consumeHeldItem(voPlayer, itemTypeId);
+				throwVerityFromHand(voPlayer, voFace);
+			});
 		}
 	});
 }
@@ -840,6 +860,12 @@ if (chatSend) {
 					/* ignore */
 				}
 			});
+			return;
+		}
+
+		if (lower.startsWith("!vo") || lower.startsWith("/vo")) {
+			ev.cancel = true;
+			system.run(() => handleVoDebugCommand(sender, lower));
 			return;
 		}
 

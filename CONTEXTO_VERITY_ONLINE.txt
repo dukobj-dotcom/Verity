@@ -34,6 +34,37 @@ ACTUALIZACIÓN v3.0.1:
     una dirección real alrededor del jugador (a veces detrás), no desde el
     centro. Se sienten mucho más realistas.
 
+ACTUALIZACIÓN v3.0.2:
+  - NO DESAPARECE: verityball, verity y verity_chase ahora tienen
+    minecraft:persistent -> ya NO se despawnean solas. La bolita que te sigue
+    caminando se queda contigo (se acabó el "desapareció").
+  - NADA EN EL AGUA (normal y terror): las entidades ya no evitan el agua
+    (avoid_water=false) y tienen minecraft:breathable (no se ahogan). Además un
+    asistente por script les da flotabilidad y empuje hacia ti dentro del agua,
+    así que NUNCA se atascan ni se hunden. Se acabó la debilidad del agua.
+  - LANZAR DESDE LA MANO: teniéndola como objeto, Shift + usar el objeto la
+    lanza con gravedad (se invoca frente a ti y sale volando). Antes solo se
+    podía lanzar la bola desde el piso; ahora también desde la mano.
+    NOTA: Bedrock no permite detectar "click IZQUIERDO al aire" por script, así
+    que el lanzamiento desde la mano usa Shift + click DERECHO (usar objeto),
+    que es 100% fiable. Si quieres a fuerzas el click izquierdo, se puede
+    intentar un truco con animation controllers del jugador (más frágil).
+  - EVENTOS DE HORROR AMPLIADOS (A-F):
+      A) Comandos de prueba: !vohelp !voscare !vojumpscare !voapparition
+         !vothrow !vobehind !vofog !vodark !vofoot !voflicker !voanger <0-100>
+         !vostate  (escríbelos en el chat para probar al instante).
+      B) Jumpscare VISUAL: usa la pantalla de jumpscare del HUD que ya existía.
+      C) Contextual: comenta/whispers al minar diamantes/netherita/esmeralda;
+         líneas amenazantes con vida baja; más intensidad de noche y en cuevas.
+      D) Manipulación sensorial segura: pasos que se acercan por detrás, crujidos
+         de puerta, ambiente de cueva, parpadeos de oscuridad, niebla (sin editar
+         el mundo del jugador, para no arriesgar su build).
+      E) "Te observa": aparición en el borde de tu visión que se desvanece si te
+         giras a mirarla (partícula + sonido).
+      F) Silencio y anticipación: corta música/sonido antes de un gran susto.
+  - VALIDACIÓN: 47/47 JS (node --check), 43/43 JSON, imports resueltos, sin
+    referencias rotas.
+
 ----------------------------------------------------------------
 2) RENOMBRADO A "VERITY ONLINE"
 ----------------------------------------------------------------

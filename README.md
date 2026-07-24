@@ -37,6 +37,18 @@ local en español) se conserva intacto.
 |---|---|
 | Click derecho sobre Verity | Recogerla (comportamiento original) |
 | **Shift + click derecho** sobre Verity | **Agarrarla y lanzarla** → reacciona |
+| **Shift + usar** el objeto de Verity (en la mano) | **Lanzarla con gravedad** desde la mano |
+
+> Bedrock no permite detectar el *click izquierdo al aire* por script, por eso el
+> lanzamiento desde la mano usa **Shift + click derecho (usar objeto)**, que es fiable.
+
+### 🧪 Comandos de prueba (chat)
+
+`!vohelp` · `!voscare` · `!vojumpscare` · `!voapparition` · `!vothrow` · `!vobehind` · `!vofog` · `!vodark` · `!vofoot` · `!voflicker` · `!voanger <0-100>` · `!vostate`
+
+### 🌊 Sin debilidades
+
+Verity **no muere** por nada (vacío, `/kill`, caída…), **no se despawnea** (se queda contigo), y **nada en el agua** en forma normal y en modo terror.
 
 ---
 

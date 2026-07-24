@@ -23,7 +23,7 @@
 
 import { Player, system, world } from "@minecraft/server";
 import { verityReply } from "./verity_ai.js";
-import { triggerScoldSequence, getPositionBehindPlayer } from "./verity_resurrection.js";
+import { triggerScoldSequence, getPositionBehindPlayer, registerVerityballOwner } from "./verity_resurrection.js";
 import { disableVerityballFollow } from "./verity_ball_follow.js";
 import { applyBallFace, applyPhaseFaces, getVerityPhase, PHASE } from "./verity_phases.js";
 import { animateTalkPulse } from "./verity_anim.js";
@@ -221,6 +221,37 @@ export function handleSneakThrow(ball, player) {
 	safeSound(player, "pntmc.verity.whosthere", 0.7, 1.3);
 
 	system.runTimeout(() => throwVerityball(ball, player), 4);
+}
+
+/**
+ * Lanzar a Verity DESDE LA MANO (cuando la tienes como objeto en la mano).
+ * La invoca como bola justo frente al jugador y la lanza con gravedad, igual
+ * que el lanzamiento desde el piso. Llamada desde main.js al usar el objeto
+ * mientras vas agachado (Shift). Devuelve true si se lanzó.
+ * @param {import("@minecraft/server").Player} player
+ * @param {number} [faceIndex]
+ * @returns {boolean}
+ */
+export function throwVerityFromHand(player, faceIndex) {
+	if (!(player instanceof Player) || !player.isValid) return false;
+	let view;
+	try { view = player.getViewDirection(); } catch { view = { x: 0, y: 0.1, z: 1 }; }
+	const pos = {
+		x: player.location.x + view.x * 0.7,
+		y: player.location.y + 1.3,
+		z: player.location.z + view.z * 0.7,
+	};
+	let ball;
+	try { ball = player.dimension.spawnEntity(VERITYBALL_ID, pos); }
+	catch (err) { console.warn(`VERITY ONLINE throwFromHand spawn: ${err}`); return false; }
+	try {
+		if (typeof faceIndex === "number") applyBallFace(ball, faceIndex, false);
+		else applyPhaseFaces(ball);
+	} catch { try { applyPhaseFaces(ball); } catch { /* ignore */ } }
+	try { registerVerityballOwner(ball, player); } catch { /* ignore */ }
+	safeSound(player, "pntmc.verity.whosthere", 0.7, 1.2);
+	throwVerityball(ball, player);
+	return true;
 }
 
 /**
@@ -650,11 +681,212 @@ export function initVerityImmortality() {
 }
 
 /* ============================================================
+ * 5) EFECTOS DE HORROR AVANZADOS (B, D, E, F)
+ * ============================================================ */
+
+/** Mirada plana (horizontal) del jugador según su yaw. */
+function getFlatLook(player) {
+	const y = (player.getRotation().y * Math.PI) / 180;
+	return { x: -Math.sin(y), z: Math.cos(y) };
+}
+
+/* B) JUMPSCARE VISUAL — usa la pantalla del HUD ya existente (token 'pntmcverity'). */
+function triggerJumpscare(player) {
+	if (!player?.isValid) return;
+	try { player.runCommand("title @s actionbar pntmcverity"); } catch { /* ignore */ }
+	safeSound(player, "pntmc.verity.jumpscare", 1, 1);
+	safeCmd(player, "camerashake add @s 0.32 0.7 rotational");
+	bumpAnger(3);
+}
+
+/* F) SILENCIO + ANTICIPACIÓN — corta música/sonido, deja un vacío, luego golpea. */
+function silenceBefore(player, thenFn, delayTicks = 28) {
+	if (!player?.isValid) return;
+	safeCmd(player, "music stop 2");
+	safeCmd(player, "stopsound @s");
+	system.runTimeout(() => { if (player.isValid) { try { thenFn(); } catch { /* ignore */ } } }, delayTicks);
+}
+
+/* E) APARICIÓN PERIFÉRICA — surge al borde de tu visión y se desvanece si la miras. */
+function peripheralApparition(player) {
+	if (!player?.isValid) return;
+	const rot = player.getRotation();
+	const side = Math.random() < 0.5 ? 1 : -1;
+	const offsetDeg = 68 + Math.random() * 46; // 68°..114° fuera del centro de la vista
+	const ang = ((rot.y + side * offsetDeg) * Math.PI) / 180;
+	const dist = 8 + Math.random() * 4;
+	const spot = {
+		x: player.location.x - Math.sin(ang) * dist,
+		y: player.location.y,
+		z: player.location.z + Math.cos(ang) * dist,
+	};
+	soundAround(player, "pntmc.verity.whosthere", 0.4, 0.9);
+	let t = 0;
+	const runId = system.runInterval(() => {
+		if (!player.isValid) { system.clearRun(runId); return; }
+		t++;
+		// "Presencia" persistente en el borde de la vista.
+		try { player.dimension.spawnParticle("pntmc:verityopen", { x: spot.x, y: spot.y + 0.6, z: spot.z }); } catch { /* ignore */ }
+		// ¿Te giraste a mirarla? -> se desvanece.
+		const look = getFlatLook(player);
+		const dx = spot.x - player.location.x, dz = spot.z - player.location.z;
+		const len = Math.hypot(dx, dz) || 1;
+		const dot = (look.x * dx + look.z * dz) / len;
+		if (dot > 0.82) {
+			system.clearRun(runId);
+			try { player.dimension.spawnParticle("pntmc:verityopen1", { x: spot.x, y: spot.y + 0.6, z: spot.z }); } catch { /* ignore */ }
+			soundAround(player, "pntmc.verity.spotted", 0.7, 1.1);
+			bumpAnger(2);
+			return;
+		}
+		if (t >= 70) system.clearRun(runId);
+	}, 2);
+}
+
+/* D) MANIPULACIÓN SENSORIAL DEL ENTORNO (segura, sin editar el mundo del jugador). */
+function footstepsBehind(player) {
+	for (let i = 0; i < 4; i++) {
+		system.runTimeout(() => {
+			if (!player.isValid) return;
+			const pos = getPositionBehindPlayer(player, 4 - i); // se acercan
+			try { player.playSound("step.stone", { location: pos, volume: 0.9, pitch: 0.85 }); } catch { /* ignore */ }
+		}, i * 8);
+	}
+}
+function darknessFlicker(player) {
+	const blink = (dur) => { try { player.addEffect("darkness", dur, { amplifier: 0, showParticles: false }); } catch { /* ignore */ } };
+	blink(8);
+	system.runTimeout(() => blink(8), 16);
+	system.runTimeout(() => blink(34), 32);
+}
+
+/* ============================================================
+ * 6) DISPARADORES CONTEXTUALES (C)  —  reacciona a lo que HACES
+ * ============================================================ */
+const ORE_LINES = [
+	"Brillante. Lo quiero, ${name}.",
+	"Ese diamante es mío ahora.",
+	"Cava más hondo. Te espero abajo.",
+	"Sé exactamente lo que encontraste.",
+	"Todo lo que tomas, lo anoto.",
+];
+const LOWHP_LINES = [
+	"Te ves débil, ${name}.",
+	"Casi... casi te tengo.",
+	"Un latido más y serás mío.",
+	"No te mueras aún. Quiero mirarte.",
+	"Huele a miedo. Me gusta.",
+];
+
+export function initVerityContextual() {
+	const bb = world.afterEvents.playerBreakBlock;
+	if (bb) {
+		bb.subscribe((ev) => {
+			if (!(ev.player instanceof Player)) return;
+			let id = "";
+			try { id = ev.brokenBlockPermutation?.type?.id || ""; } catch { /* ignore */ }
+			if (/diamond_ore|ancient_debris|emerald_ore/.test(id) && Math.random() < 0.5) {
+				bumpAnger(2);
+				say(scanVerityball(), pick(ORE_LINES).replaceAll("${name}", ev.player.name || "tú"));
+				soundAround(ev.player, "pntmc.verity.know_everything", 0.6, 1);
+			}
+		});
+	}
+	console.warn("VERITY ONLINE: disparadores contextuales activos");
+}
+
+/* ============================================================
+ * 7) LIBERTAD EN EL AGUA  —  Verity nada (normal y terror)
+ * ============================================================
+ * La debilidad clásica de los mods de terror es el agua. Además de arreglar la
+ * navegación en las entidades (avoid_water=false + breathable), este asistente
+ * garantiza que NUNCA se atasque ni se hunda: flota y avanza hacia el jugador.
+ */
+const SWIM_TYPES = ["pntmc:verity_chase", "pntmc:verity", "pntmc:verityball"];
+
+function isInWater(e) {
+	try { if (e.isInWater === true) return true; } catch { /* ignore */ }
+	try {
+		const b = e.dimension.getBlock({ x: Math.floor(e.location.x), y: Math.floor(e.location.y), z: Math.floor(e.location.z) });
+		if (b && (b.typeId === "minecraft:water" || b.typeId === "minecraft:flowing_water")) return true;
+	} catch { /* ignore */ }
+	return false;
+}
+
+export function initVerityWaterFreedom() {
+	system.runInterval(() => {
+		for (const dimId of DIMENSIONS) {
+			let dim;
+			try { dim = world.getDimension(dimId); } catch { continue; }
+			for (const type of SWIM_TYPES) {
+				let list;
+				try { list = dim.getEntities({ type }); } catch { continue; }
+				for (const e of list) {
+					if (!e.isValid || !isInWater(e)) continue;
+					let vel = { x: 0, y: 0, z: 0 };
+					try { vel = e.getVelocity(); } catch { /* ignore */ }
+					const imp = { x: 0, y: 0, z: 0 };
+					if (vel.y < 0.08) imp.y = 0.11; // flotabilidad: nunca se hunde/atasca
+					const p = nearestPlayerTo(e.location, dim);
+					if (p) {
+						const dx = p.location.x - e.location.x, dz = p.location.z - e.location.z;
+						const len = Math.hypot(dx, dz) || 1;
+						const hSpeed = Math.hypot(vel.x, vel.z);
+						if (hSpeed < 0.12) { imp.x = (dx / len) * 0.08; imp.z = (dz / len) * 0.08; } // avanza hacia ti
+					}
+					if (imp.x || imp.y || imp.z) {
+						try { e.applyImpulse(imp); }
+						catch {
+							try { e.teleport({ x: e.location.x + imp.x, y: e.location.y + imp.y, z: e.location.z + imp.z }); } catch { /* ignore */ }
+						}
+					}
+				}
+			}
+		}
+	}, 3);
+	console.warn("VERITY ONLINE: libertad en el agua activa (nada normal + terror)");
+}
+
+/* ============================================================
+ * 8) COMANDOS DE PRUEBA (A)  —  para iterar rápido en el juego
+ * ============================================================ */
+export function handleVoDebugCommand(player, lower) {
+	if (!(player instanceof Player)) return false;
+	const parts = lower.trim().split(/\s+/);
+	const cmd = parts[0].replace(/^\//, "!");
+	const arg = parts[1];
+	switch (cmd) {
+		case "!vohelp":
+			player.sendMessage("§7[VO] Comandos: §f!voscare !vojumpscare !voapparition !vothrow !vobehind !vofog !vodark !vofoot !voflicker !voanger <0-100> !vostate");
+			return true;
+		case "!voscare": fireScare(player, 1); return true;
+		case "!vojumpscare": silenceBefore(player, () => triggerJumpscare(player), 20); return true;
+		case "!voapparition": peripheralApparition(player); return true;
+		case "!vofoot": footstepsBehind(player); return true;
+		case "!voflicker": darknessFlicker(player); return true;
+		case "!vofog":
+			safeCmd(player, "fog @s push pntmc:verity_dread vo_fog");
+			system.runTimeout(() => safeCmd(player, "fog @s remove vo_fog"), 140);
+			return true;
+		case "!vodark":
+			try { player.addEffect("darkness", 100, { amplifier: 0, showParticles: false }); } catch { /* ignore */ }
+			return true;
+		case "!vobehind": { const b = scanVerityball(); if (b) reactTeleportBehind(b, player); else player.sendMessage("§7[VO] no hay verityball cerca"); return true; }
+		case "!vothrow": { const b = scanVerityball(); if (b) throwVerityball(b, player); else player.sendMessage("§7[VO] no hay verityball cerca"); return true; }
+		case "!voanger": { const n = parseFloat(arg); if (!Number.isNaN(n)) { setAnger(n); player.sendMessage(`§7[VO] ira = ${getAnger()}`); } return true; }
+		case "!vostate": player.sendMessage(`§7[VO] ira=${getAnger()} tiempo=${getPlaytime()} hostilidad=${getHostility().toFixed(2)}`); return true;
+	}
+	return false;
+}
+
+/* ============================================================
  * INIT
  * ============================================================ */
 export function initVerityOnline() {
 	initVerityHorrorDirector();
 	initVerityAIBridge();
 	initVerityImmortality();
-	console.warn("VERITY ONLINE: expansion cargada (throw + horror + AI bridge + inmortalidad)");
+	initVerityContextual();
+	initVerityWaterFreedom();
+	console.warn("VERITY ONLINE: expansion cargada (throw + horror + AI bridge + inmortalidad + agua + contextual)");
 }

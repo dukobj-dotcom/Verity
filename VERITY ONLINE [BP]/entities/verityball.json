@@ -9,7 +9,10 @@
 			"properties": {
 				"pntmc:face_index": {
 					"type": "int",
-					"range": [0, 11],
+					"range": [
+						0,
+						11
+					],
 					"default": 0,
 					"client_sync": true
 				},
@@ -50,7 +53,7 @@
 			"pntmc:follow_active": {
 				"minecraft:navigation.walk": {
 					"can_path_over_water": true,
-					"avoid_water": true,
+					"avoid_water": false,
 					"avoid_damage_blocks": true,
 					"can_pass_doors": false,
 					"can_open_doors": false,
@@ -92,7 +95,11 @@
 		},
 		"components": {
 			"minecraft:type_family": {
-				"family": ["pntmc", "verityball", "mob"]
+				"family": [
+					"pntmc",
+					"verityball",
+					"mob"
+				]
 			},
 			"minecraft:collision_box": {
 				"width": 0.2,
@@ -103,7 +110,11 @@
 					{
 						"width": 0.5,
 						"height": 0.5,
-						"pivot": [0, 0.25, 0]
+						"pivot": [
+							0,
+							0.25,
+							0
+						]
 					}
 				]
 			},
@@ -155,25 +166,40 @@
 			},
 			"minecraft:loot": {
 				"table": "loot_tables/empty.json"
+			},
+			"minecraft:persistent": {},
+			"minecraft:breathable": {
+				"breathes_air": true,
+				"breathes_water": true,
+				"generates_bubbles": false,
+				"suffocate_time": 0
 			}
 		},
 		"events": {
 			"pntmc:pickup": {
 				"add": {
-					"component_groups": ["pntmc:pickup_ping"]
+					"component_groups": [
+						"pntmc:pickup_ping"
+					]
 				},
 				"remove": {
-					"component_groups": ["pntmc:pickup_ping"]
+					"component_groups": [
+						"pntmc:pickup_ping"
+					]
 				}
 			},
 			"pntmc:start_follow": {
 				"add": {
-					"component_groups": ["pntmc:follow_active"]
+					"component_groups": [
+						"pntmc:follow_active"
+					]
 				}
 			},
 			"pntmc:stop_follow": {
 				"remove": {
-					"component_groups": ["pntmc:follow_active"]
+					"component_groups": [
+						"pntmc:follow_active"
+					]
 				}
 			}
 		}
