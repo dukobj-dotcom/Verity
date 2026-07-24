@@ -40,8 +40,12 @@ import {
 	FACE_SERIOUS_2,
 	FACE_SERIOUS_3,
 } from "./verity_faces.js";
+import { getMood, getMoodHorrorMultiplier, MOOD, noteVerityMistreatment } from "./verity_mood.js";
 
 const VERITYBALL_ID = "pntmc:verityball";
+let groqLastHeartbeatTick = -99999;
+const GROQ_HEARTBEAT_TTL = 200;
+export function isGroqConnected() { return system.currentTick - groqLastHeartbeatTick <= GROQ_HEARTBEAT_TTL; }
 
 /* ============================================================
  * ESTADO PERSISTENTE (ira / tiempo en el mundo)
@@ -261,6 +265,7 @@ export function throwVerityFromHand(player, faceIndex) {
 function throwVerityball(ball, player) {
 	if (!ball?.isValid || inFlight.has(ball.id)) return;
 	inFlight.add(ball.id);
+	noteVerityMistreatment(player.id, "throw");
 
 	let dir;
 	try { dir = player.getViewDirection(); } catch { dir = { x: 0, y: 0.2, z: 1 }; }
@@ -285,7 +290,7 @@ function throwVerityball(ball, player) {
 		// VERITY ONLINE: si el lanzamiento la manda al VACÍO, rescatarla. Nunca muere.
 		if (ny < voidFloorFor(dim.id)) {
 			system.clearRun(runId); inFlight.delete(ball.id);
-			rescueFromVoid(ball, dim);
+			rescueFromVoid(ball, dim, player);
 			return;
 		}
 
@@ -298,6 +303,7 @@ function throwVerityball(ball, player) {
 			try { ball.teleport({ x: nx, y: ny, z: nz }); } catch { /* ignore */ }
 			system.clearRun(runId); inFlight.delete(ball.id);
 			bumpAnger(9);
+			noteVerityMistreatment(player.id, "lava");
 			return;
 		}
 
@@ -332,13 +338,15 @@ function onThrowLand(ball, player) {
 
 	bumpAnger(6);
 	const hostility = getHostility();
+	const mood = getMood(player.id);
 	const phase = getVerityPhase();
 	const name = player.name || "tú";
 
 	// Reparto de reacciones ponderado por hostilidad (más hostil => más agresivo).
 	const roll = Math.random();
 	let mode;
-	if (roll < 0.30 - hostility * 0.20) mode = "taunt";
+	if (mood === MOOD.FRIENDLY) mode = "taunt";
+	else if (roll < 0.30 - hostility * 0.20) mode = "taunt";
 	else if (roll < 0.55 - hostility * 0.10) mode = "threat";
 	else if (roll < 0.78) mode = "scold";
 	else if (roll < 0.92) mode = "behind";
@@ -350,7 +358,9 @@ function onThrowLand(ball, player) {
 	switch (mode) {
 		case "taunt": {
 			safeFace(ball, FACE_CREEPY_SMILE);
-			say(ball, pick(TAUNT_LINES).replaceAll("${name}", name));
+			const line = mood === MOOD.FRIENDLY ? "No tenías que hacer eso... pero confío en que me recogerás, " + name + "." : pick(TAUNT_LINES).replaceAll("${name}", name);
+			say(ball, line);
+			if (mood === MOOD.FRIENDLY) safeSound(player, "pntmc.verity.vo_hurt_1", 1, 1);
 			restoreIdleFace(ball, 70);
 			break;
 		}
@@ -441,6 +451,8 @@ let tickCounter = 0;
 /** @param {import("@minecraft/server").Player} player @param {number} level @param {string} [origin] */
 function fireScare(player, level, origin = "director") {
 	if (!player?.isValid) return;
+	level *= getMoodHorrorMultiplier(player.id);
+	if (origin === "director" && level < 0.12) return;
 	const name = player.name || "tú";
 	const pool = [];
 
@@ -519,7 +531,7 @@ function directorTick() {
 		if (tickCounter - last < 25) continue;
 
 		// Probabilidad por chequeo, crece con la hostilidad.
-		const chance = 0.10 + hostility * 0.30;
+		const chance = (0.10 + hostility * 0.30) * getMoodHorrorMultiplier(player.id);
 		if (Math.random() > chance) continue;
 
 		lastScareAt.set(player.id, tickCounter);
@@ -611,6 +623,8 @@ export function initVerityAIBridge() {
 		const msg = ev.message || "";
 		try {
 			if (id === "verity:say") aiSay(msg);
+			else if (id === "verity:online") groqLastHeartbeatTick = system.currentTick;
+			else if (id === "verity:offline") groqLastHeartbeatTick = -99999;
 			else if (id === "verity:emote") aiEmote(msg);
 			else if (id === "verity:action") aiAction(msg);
 			else if (id === "verity:anger") { const n = parseFloat(msg); if (!Number.isNaN(n)) setAnger(n); }
@@ -635,10 +649,11 @@ export function initVerityAIBridge() {
  * @param {import("@minecraft/server").Entity} ball
  * @param {import("@minecraft/server").Dimension} dim
  */
-function rescueFromVoid(ball, dim) {
+function rescueFromVoid(ball, dim, owner) {
 	if (!ball?.isValid) return;
 	bumpAnger(8);
 	const player = nearestPlayerTo(ball.location, dim);
+	if (owner?.isValid) noteVerityMistreatment(owner.id, "void");
 	if (player?.isValid) {
 		try { ball.teleport(getPositionBehindPlayer(player, 2.4)); } catch { /* ignore */ }
 		safeFace(ball, FACE_SERIOUS_3);

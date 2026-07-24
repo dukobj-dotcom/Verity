@@ -551,6 +551,11 @@
 			],
 			"min_distance": 1,
 			"max_distance": 32
-		}
+		},
+		"pntmc.verity.vo_hurt_1": { "category": "neutral", "sounds": [{ "name": "sounds/pntmcverity/vo_hurt_1", "stream": true }], "min_distance": 1, "max_distance": 24 },
+		"pntmc.verity.vo_mood_friendly_1": { "category": "neutral", "sounds": [{ "name": "sounds/pntmcverity/vo_mood_friendly_1", "stream": true }], "min_distance": 1, "max_distance": 24 },
+		"pntmc.verity.vo_mood_neutral_1": { "category": "neutral", "sounds": [{ "name": "sounds/pntmcverity/vo_mood_neutral_1", "stream": true }], "min_distance": 1, "max_distance": 24 },
+		"pntmc.verity.vo_mood_annoyed_1": { "category": "neutral", "sounds": [{ "name": "sounds/pntmcverity/vo_mood_annoyed_1", "stream": true }], "min_distance": 1, "max_distance": 24 },
+		"pntmc.verity.vo_mood_hostile_1": { "category": "neutral", "sounds": [{ "name": "sounds/pntmcverity/vo_mood_hostile_1", "stream": true }], "min_distance": 1, "max_distance": 32 }
 	}
 }
