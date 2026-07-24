@@ -40,9 +40,18 @@ local en español) se conserva intacto.
 
 ---
 
+## ⬇️ Descarga del addon funcional
+
+**`.mcaddon` listo para instalar:**
+https://pub.hyperagent.com/api/published/pbf01KY8XN3WX_T2ZCGZ4917PAZJN3/VERITY_ONLINE.mcaddon
+
+> Contiene TODO (código + texturas + sonidos + modelos). El repositorio versiona
+> el código y la configuración; los binarios y el modelo grande del monstruo
+> viajan dentro del `.mcaddon`.
+
 ## 📦 Instalación
 
-1. Descarga `VERITY_ONLINE.mcaddon` (ver la sección *Releases* / enlace de descarga).
+1. Descarga `VERITY_ONLINE.mcaddon` desde el enlace de arriba.
 2. Ábrelo con Minecraft para importarlo (crea el pack de comportamiento y el de recursos).
 3. Al crear/editar el mundo:
    - Activa **APIs experimentales / Beta APIs**.
