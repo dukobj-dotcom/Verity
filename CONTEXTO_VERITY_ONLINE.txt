@@ -1,0 +1,205 @@
+================================================================
+ VERITY ONLINE  —  CONTEXTO Y PROGRESO
+ Modificado y expandido por MATTEDUCK
+ Original: ThatMob's Verity by PnTMC
+ Fecha de este avance: 2026-07-23
+================================================================
+
+Este archivo explica QUÉ es VERITY ONLINE, QUÉ se agregó en esta
+entrega, CÓMO funciona, y QUÉ falta (el .exe y el audio se hacen
+después). Léelo completo antes de continuar el proyecto.
+
+----------------------------------------------------------------
+1) RESUMEN
+----------------------------------------------------------------
+VERITY ONLINE es la evolución del addon "ThatMob's Verity 2.1.0"
+para Minecraft Bedrock. NO se reescribió desde cero: el addon
+original ya era muy avanzado (46 scripts, forma de bola física,
+resurrección, persecución, fases que escalan, un "cerebro" local
+en español). La estrategia fue REBRANDEAR + EXPANDIR, conservando
+todo lo que ya funcionaba y los créditos del creador original.
+
+Estado de esta entrega:
+  - .ZIP del ADDON: FUNCIONAL (rebrandeado + mecánicas nuevas).
+  - .EXE (centro de control C++ con Groq): PENDIENTE (se deja el
+    puente preparado dentro del addon; ver sección 6).
+
+----------------------------------------------------------------
+2) RENOMBRADO A "VERITY ONLINE"
+----------------------------------------------------------------
+Cambiado a VERITY ONLINE (capa visible / de proyecto):
+  - Nombre del pack (BP y RP): "VERITY ONLINE [BP]" / "[RP]".
+  - Nombres de carpeta: "VERITY ONLINE [BP]" / "VERITY ONLINE [RP]".
+  - Descripción del pack: incluye "Modified & expanded by MATTEDUCK".
+  - Autores del manifest: PnTMC (original) + MATTEDUCK (expansión).
+  - Versión del pack subida a 3.0.0.
+  - UUIDs REGENERADOS (5 nuevos) para que VERITY ONLINE sea un pack
+    independiente que puede convivir con el original sin chocar.
+
+Se CONSERVA a propósito (decisión técnica + de créditos):
+  - El namespace interno de entidades "pntmc:" (pntmc:verityball,
+    pntmc:verity, etc.). Renombrar el namespace obligaría a tocar
+    ~88 archivos con altísimo riesgo de romper el addon, y "pntmc"
+    ES el crédito técnico del creador. Renombrarlo NO aporta nada
+    visible al jugador. (Se puede hacer después con calma si lo
+    quieres 100%, pero no es recomendable para un entregable
+    "funcional ya".)
+  - Los diálogos y la base de conocimiento de Verity (su nombre en
+    el juego sigue siendo "Verity", el personaje; "VERITY ONLINE"
+    es el nombre del PROYECTO/ADDON).
+
+----------------------------------------------------------------
+3) MECÁNICA NUEVA: AGARRAR Y LANZAR  (lo que pediste)
+----------------------------------------------------------------
+Archivo: [BP]/scripts/verity_online.js  (+ enganches en main.js)
+
+Cómo se juega:
+  - AGÁCHATE (Shift) y haz CLICK DERECHO sobre Verity (su forma de
+    bola) para agarrarla y LANZARLA en la dirección en la que miras.
+  - Click derecho SIN agacharte = comportamiento original (recogerla
+    como objeto). No se rompió nada de lo anterior.
+
+Cómo se siente:
+  - Pequeño "wind-up": Verity se sobresalta (cara de susto + sonido),
+    luego sale volando con un arco balístico suave (con gravedad) y
+    estela de partículas.
+  - Al aterrizar, REACCIONA según su personalidad y su nivel de
+    hostilidad (que sube con el tiempo y con cada lanzamiento):
+        * Burla    -> se ríe de ti.
+        * Amenaza   -> te advierte, cara seria.
+        * Regaño    -> secuencia de regaño CON VOZ (reutiliza el
+                       sistema de voces del addon original).
+        * Detrás de ti -> desaparece y REAPARECE justo detrás de ti,
+                          enojada (igual que la reacción a la lava).
+        * Horror    -> dispara un evento de horror (temblor de cámara,
+                       oscuridad, sonido, "presencia").
+  - Si la lanzas a LAVA o FUEGO: NO muere. El sistema de resurrección
+    original la revive detrás del jugador y te regaña. (Ya existía;
+    ahora también se activa al lanzarla ahí.)
+
+Robustez:
+  - Anti-doble-disparo (cooldown), todo envuelto en try/catch, y
+    detección de choque con bloques sólidos para que no atraviese
+    paredes.
+
+----------------------------------------------------------------
+4) EVENTOS DE HORROR NUEVOS: "DIRECTOR DE HORROR"
+----------------------------------------------------------------
+Archivo: [BP]/scripts/verity_online.js
+
+Un sistema ambiental que hace sentir que Verity SIEMPRE está ahí,
+observando. Cada ~20 s evalúa a cada jugador y, con probabilidad
+creciente, dispara un susto. Escala con el tiempo en el mundo y con
+la ira acumulada (mientras más juegas, más peligrosa e impredecible).
+
+Tipos de susto (todos con APIs reales, reutilizando sonidos que ya
+existen en el addon):
+  - Susurros (sonidos a bajo volumen).
+  - Llamados por tu NOMBRE en la barra de acción ("te veo",
+    "detrás de ti", "<tu nombre>...").
+  - Golpes/toques (sonido de caja de cartón).
+  - Crujido de huesos + leve temblor de cámara.
+  - Temblor de cámara fuerte.
+  - Oscuridad repentina (efecto darkness).
+  - Niebla de terror (fog nuevo: pntmc:verity_dread).
+  - "Presencia" detrás de ti (partícula + sonido).
+  - Susto de audio fuerte (jumpscare) en niveles altos.
+  - Mensajes psicológicos en el chat en niveles altos.
+
+Hay cooldown por jugador (mínimo ~25 s) para que no sature.
+
+----------------------------------------------------------------
+5) ESTADO / PERSONALIDAD QUE EVOLUCIONA
+----------------------------------------------------------------
+Se guardan en propiedades dinámicas del mundo:
+  - pntmc:vo_anger    (ira 0..100; sube al lanzarla/hostigarla, baja
+                       muy lento con el tiempo si la dejas en paz).
+  - pntmc:vo_playtime (tiempo aprox. en el mundo, en minutos).
+La "hostilidad" global (0..1) combina ambas y controla la frecuencia
+e intensidad de los sustos y qué tan agresivas son sus reacciones.
+
+----------------------------------------------------------------
+6) PUENTE DE IA (Groq)  —  PREPARADO PARA EL .EXE
+----------------------------------------------------------------
+IMPORTANTE (realidad técnica de Bedrock):
+  Un addon del CLIENTE de Minecraft Bedrock NO puede hacer llamadas
+  HTTP (no existe @minecraft/server-net en el cliente). Por lo tanto,
+  el addon SOLO no puede hablar con Groq. La IA (Groq) debe entrar por
+  una app externa (tu .exe) que actúe de puente.
+
+Arquitectura prevista (se implementa en el .exe después):
+  1. El jugador escribe en el chat de Minecraft.
+  2. El .exe está conectado al juego por el protocolo WebSocket de
+     Bedrock (comando /connect IP:PUERTO) y ESCUCHA el chat.
+  3. El .exe manda ese texto a Groq, con el "system prompt" que
+     obliga a la IA a ROLEPLAY permanente como Verity (nunca romper
+     personaje).
+  4. Groq responde como Verity. El .exe DEVUELVE la respuesta al juego
+     enviando comandos /scriptevent que el addon YA sabe escuchar:
+
+        /scriptevent verity:say   <texto que dice Verity>
+        /scriptevent verity:emote  <smile|creepy|angry|serious|hurt|
+                                     grin|bored|hungry|speak>
+        /scriptevent verity:action <scold|behind|jumpscare|whisper|
+                                     fog|darkness>
+        /scriptevent verity:anger  <0..100>
+        /scriptevent verity:horror
+
+  El addon (verity_online.js -> initVerityAIBridge) ya recibe esos
+  scriptevents y hace que Verity hable, cambie de cara, regañe,
+  reaparezca detrás del jugador, dispare horror, etc.
+
+  => Con esto, cuando exista el .exe, Groq controla a Verity como si
+     estuviera VIVA dentro de Minecraft, usando animaciones, voces,
+     caras y eventos que ya existen.
+
+Detalle para el .exe (resumen; ver docs/INTEGRACION_APP_GROQ.md):
+  - Ventana flotante, arrastrable, ~1/4 de pantalla, negra,
+    minimalista, esquinas redondeadas.
+  - Campo para la API Key de Groq.
+  - Selector de idioma (Español por defecto, Inglés secundario).
+  - Botón para lanzar VERITY ONLINE.
+  - Indicador de estado de conexión.
+  - Fondo/arte: lo pones tú después.
+
+----------------------------------------------------------------
+7) COMPATIBILIDAD
+----------------------------------------------------------------
+  - @minecraft/server: 2.9.0-beta   (SE MANTIENE; es lo que el código
+    original usa; cambiarlo rompería APIs beta que ya se usan).
+  - @minecraft/server-admin: 1.0.0-beta (igual que el original).
+  - min_engine_version: [1, 26, 0].
+  - REQUISITO: activar "Beta APIs" (APIs experimentales) en el mundo,
+    y usar Minecraft Bedrock / Preview compatible con 1.26+.
+
+----------------------------------------------------------------
+8) VALIDACIÓN HECHA EN ESTE AVANCE
+----------------------------------------------------------------
+  - 47/47 scripts .js pasan "node --check" (sintaxis correcta).
+  - 43/43 archivos .json parsean correctamente (incluida la niebla).
+  - Todos los imports de verity_online.js resuelven a exports reales.
+  - main.js quedó enganchado (import + rama de Shift + init).
+  NOTA: no es posible ejecutar Minecraft Bedrock aquí para una prueba
+  en vivo; la validación es estática (sintaxis + estructura + APIs).
+  Prueba en el juego cuando lo cargues; si algo sale en el content
+  log, lo ajustamos.
+
+----------------------------------------------------------------
+9) PENDIENTE (lo hacemos después, en este orden)
+----------------------------------------------------------------
+  [ ] .EXE en C++ (ventana flotante + Groq + WebSocket bridge).
+  [ ] Audio nuevo (tú generas los MP4/OGG; las líneas y dónde ponerlas
+      están en docs/AUDIO_LINEAS.md).
+  [ ] (Opcional) Renombrado profundo del namespace pntmc: -> verityonline:
+      (alto riesgo; solo si de verdad lo quieres 100%).
+  [ ] Más formas de horror y más reacciones únicas (fácil de sumar en
+      verity_online.js).
+
+----------------------------------------------------------------
+10) CRÉDITOS
+----------------------------------------------------------------
+  - Creador original: PnTMC  —  "ThatMob's Verity".
+    (YouTube del original en el manifest: youtube.com/@PnTMCvn)
+  - Modificado y expandido por: MATTEDUCK.
+  El trabajo y la propiedad del autor original se respetan siempre.
+================================================================

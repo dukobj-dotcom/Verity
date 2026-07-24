@@ -1,0 +1,66 @@
+{
+  "format_version": 2,
+  "metadata": {
+    "authors": [
+      "PnTMC (original creator)",
+      "MATTEDUCK (modified & expanded)"
+    ],
+    "license": "All Rights Reserved",
+    "url": "https://www.youtube.com/@PnTMCvn"
+  },
+  "header": {
+    "name": "VERITY ONLINE [BP]",
+    "description": "VERITY ONLINE  §7—§r intelligent horror entity for Bedrock.\\nModified & expanded by MATTEDUCK.\\nOriginal: ThatMob's Verity by PnTMC.",
+    "uuid": "0c4f63c2-3550-42ca-8505-100f8c0a6ea0",
+    "min_engine_version": [
+      1,
+      26,
+      0
+    ],
+    "version": [
+      3,
+      0,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "3dd3db69-9f17-4981-8a68-cce60bde50a1",
+      "version": [
+        3,
+        0,
+        0
+      ]
+    },
+    {
+      "type": "script",
+      "language": "javascript",
+      "entry": "scripts/main.js",
+      "uuid": "62c0b8f4-de77-46c6-8e79-12c42c7be185",
+      "version": [
+        3,
+        0,
+        0
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "2.9.0-beta"
+    },
+    {
+      "module_name": "@minecraft/server-admin",
+      "version": "1.0.0-beta"
+    },
+    {
+      "uuid": "986a628e-3bad-45a9-acb9-50a8a093639e",
+      "version": [
+        3,
+        0,
+        0
+      ]
+    }
+  ]
+}
