@@ -135,6 +135,15 @@ La app parsea las etiquetas `[emote:...]` / `[action:...]`, las convierte en
 | `verity:action` | `scold\|behind\|jumpscare\|whisper\|fog\|darkness` | ejecuta esa acción sobre el jugador más cercano |
 | `verity:anger` | `0`..`100` | fija su nivel de ira/hostilidad |
 | `verity:horror` | (vacío) | dispara un susto a todos los jugadores |
+| `verity:online` | (vacío) | latido de la app: Groq toma prioridad del diálogo durante ~10 s |
+| `verity:offline` | (vacío) | la app cerró: el diálogo vuelve al script local de inmediato |
+
+La app debe emitir `scriptevent verity:online` cada pocos segundos desde que
+abre su puente WebSocket hasta que se cierre; al cerrar emite
+`scriptevent verity:offline`. Mientras el latido está vigente, el addon no
+ejecuta `handleVerityChat` ni `tryHeyVerityWake`: deja que la app/Groq responda
+con `verity:say`. Las mecánicas locales (afinidad, lanzamiento y horror) siguen
+activas y Groq puede dispararlas por `verity:action`.
 
 > Estos identificadores están implementados en `verity_online.js`. Si quieres más
 > acciones (p. ej. `verity:teleport_here`, `verity:silence`), se agregan ahí.

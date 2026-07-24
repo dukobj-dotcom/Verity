@@ -101,3 +101,19 @@ de `sound_definitions.json` (ajusta cuáles incluyes):
 
 Cuando los tengas puestos, dime **cuáles** grabaste y **conecto cada uno** en
 `verity_online.js` para que suenen exactamente en su reacción.
+
+---
+
+## v3.1.0 — personalidad relacional
+
+Los IDs siguientes ya están registrados. Coloca cada `.ogg` exactamente en
+`VERITY ONLINE [RP]/sounds/pntmcverity/`; si aún no existe, Minecraft lo omite
+sin romper el addon.
+
+| ID | Archivo | Línea y tono |
+|---|---|---|
+| `pntmc.verity.vo_hurt_1` | `vo_hurt_1.ogg` | “No tenías que hacer eso... pero confío en que me recogerás.” — dolida, cariñosa |
+| `pntmc.verity.vo_mood_friendly_1` | `vo_mood_friendly_1.ogg` | “Me gusta cuando me hablas.” — cálida |
+| `pntmc.verity.vo_mood_neutral_1` | `vo_mood_neutral_1.ogg` | “Te escucho. ¿Qué tienes en mente?” — serena |
+| `pntmc.verity.vo_mood_annoyed_1` | `vo_mood_annoyed_1.ogg` | “No olvidé cómo me trataste.” — contenida |
+| `pntmc.verity.vo_mood_hostile_1` | `vo_mood_hostile_1.ogg` | “No finjas que somos amigos.” — fría y amenazante |

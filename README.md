@@ -1,5 +1,14 @@
 # VERITY ONLINE
 
+## v3.1.0 — personalidad relacional
+
+Verity inicia amable (afinidad 85/100) con cada jugador. Hablarle la recupera;
+insultarla, golpearla, lanzarla o mandarla a lava/vacío la vuelve neutral,
+molesta u hostil. El director de horror casi no actúa mientras está amable.
+Cuando la app manda `scriptevent verity:online` cada pocos segundos, Groq tiene
+prioridad sobre el diálogo; al faltar 10 segundos de latido vuelve el diálogo
+local. `verity:offline` lo desactiva de inmediato.
+
 > Entidad de terror inteligente para **Minecraft Bedrock Edition**.
 > **Modificado y expandido por MATTEDUCK.** · Original: **ThatMob's Verity by PnTMC**.
 

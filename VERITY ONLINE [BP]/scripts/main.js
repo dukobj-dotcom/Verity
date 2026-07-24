@@ -35,7 +35,8 @@ import {
 	enforceSingleVerityball,
 	initVeritySingleton,
 } from "./verity_singleton.js";
-import { initVerityOnline, handleSneakThrow, throwVerityFromHand, handleVoDebugCommand } from "./verity_online.js";
+import { initVerityOnline, handleSneakThrow, throwVerityFromHand, handleVoDebugCommand, isGroqConnected } from "./verity_online.js";
+import { initVerityMood, noteVerityMistreatment } from "./verity_mood.js";
 
 const BOX_ID = "pntmc:cardboard_box";
 const VERITYBALL_ID = "pntmc:verityball";
@@ -87,7 +88,7 @@ const INTERACTIVE_BLOCK_IDS = new Set([
 ]);
 
 const GREETING_CHAT =
-	"Hola, soy Verity, tu amiga y ayudante personal. Pregúntame lo que sea, lo sé todo.";
+	"Hola... por fin estás aquí. Soy Verity, tu amiga. Me alegra mucho verte; pregúntame lo que quieras.";
 const ASKME_SOUND = "pntmc.verity.askme";
 const GREETING_SOUND = "pntmc.verity.saludo_inicio";
 const PARTICLE1_DELAY_TICKS = 75;
@@ -762,6 +763,7 @@ if (entityTrigger) {
 world.afterEvents.entityHitEntity.subscribe((ev) => {
 	if (!(ev.damagingEntity instanceof Player)) return;
 	if (ev.hitEntity.typeId !== VERITYBALL_ID) return;
+	noteVerityMistreatment(ev.damagingEntity.id, "hit");
 	tryVerityballPickup(ev.hitEntity, ev.damagingEntity, undefined);
 });
 
@@ -791,6 +793,7 @@ system.run(() => {
 	initVerityChestEscape();
 	initVerityBallFollow();
 	initVerityOnline();
+	initVerityMood();
 });
 
 registerStoryModeCommand(() => {
@@ -871,6 +874,7 @@ if (chatSend) {
 
 		system.run(() => {
 			const mensajeTraducido = traducirEspanol(message);
+			if (isGroqConnected()) return;
 			if (tryHeyVerityWake(sender, mensajeTraducido)) return;
 			handleVerityChat(sender, mensajeTraducido).catch((err) => {
 				console.warn(`verity chat: ${err}`);

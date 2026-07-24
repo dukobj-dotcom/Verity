@@ -78,6 +78,8 @@ import {
 	resetRudeStrikes,
 	RUDE_ESCALATE_AT,
 } from "./verity_social_state.js";
+import { noteVerityMistreatment, noteVerityTalk } from "./verity_mood.js";
+import { getSmalltalkReply, getSmalltalkVoice } from "./verity_smalltalk.js";
 
 const VERITYBALL_ID = "pntmc:verityball";
 const VERITY_ITEM_IDS = new Set([
@@ -1096,6 +1098,7 @@ function dayPeriodLabel() {
 function tryInsultEscalation(player, message, ball) {
 	if (detectSocialIntent(message) !== "insult") return null;
 
+	noteVerityMistreatment(player.id, "insult");
 	const count = registerRudeStrike(player.id);
 	const name = playerFirstName(player);
 
@@ -2004,6 +2007,7 @@ export async function handleVerityChat(player, message) {
 		}
 
 		notifyVerityPlayerChat(player.id);
+		noteVerityTalk(player.id);
 
 		if (!isEnglishMessage(question)) {
 			if (mode === "inventory") touchInventoryAwake(player);
@@ -2099,18 +2103,22 @@ export async function handleVerityChat(player, message) {
 				return;
 			}
 
-			const brainReply = await tryBrainAnswer(player, question, phase);
+		const brainReply = await tryBrainAnswer(player, question, phase);
 			if (brainReply) {
 				scheduleVerityReply(brainReply, ball, "brain", undefined, undefined, player.id);
 				return;
 			}
+			scheduleVerityReply(getSmalltalkReply(player.id), ball, "social", undefined, getSmalltalkVoice(player.id), player.id);
 			return;
 		}
 
 		if (phase !== PHASE.ONE) return;
 
 		const result = await buildAnswer(player, question, ball, mindOpts);
-		if (result === null) return;
+		if (result === null) {
+			scheduleVerityReply(getSmalltalkReply(player.id), ball, "social", undefined, getSmalltalkVoice(player.id), player.id);
+			return;
+		}
 		if (result === RAIN_COUNTDOWN_MARKER) {
 			startRainCountdown(player, ball);
 			return;

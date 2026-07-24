@@ -1,6 +1,10 @@
 ================================================================
  VERITY ONLINE  —  CONTEXTO Y PROGRESO
  Modificado y expandido por MATTEDUCK
+
+ v3.1.0: afinidad individual (inicio 85), humores amable/neutral/molesta/hostil,
+ small talk español y prioridad de Groq con heartbeats `verity:online` que
+ expiran tras ~10 segundos (`verity:offline` desactiva al instante).
  Original: ThatMob's Verity by PnTMC
  Fecha de este avance: 2026-07-23
 ================================================================
